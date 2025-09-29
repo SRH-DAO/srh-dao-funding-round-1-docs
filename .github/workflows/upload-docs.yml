@@ -1,1 +1,29 @@
+name: Upload Grants to Web3.Storage
+
+on:
+  push:
+    paths:
+      - 'docs/grants/**.pdf'
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install web3.storage CLI
+        run: npm install -g web3.storage-cli
+      - name: Authenticate with DID-key
+        env:
+          DID_KEY: ${{ secrets.WEB3_DID_KEY }}
+        run: w3 token import --did-key "$DID_KEY"
+      - name: Upload PDF docs
+        run: |
+          CID=$(w3 put docs/grants --no-progress)
+          echo "::set-output name=cid::$CID"
+      - name: Open PR to update README
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "chore: update grants CID"
+          title: "chore: update grants CID"
+          body: "New IPFS CID for docs/grants: ${{ steps.upload.outputs.cid }}"
 
